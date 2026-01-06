@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fireboy & Watergirl Mobile</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            overflow: hidden; /* Remove barras de rolagem */
+            touch-action: none; /* Impede zoom e rolagem no celular */
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Camada de Controles (Overlay) */
+        #controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Deixa clicar no jogo se não tocar no botão */
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .btn-group {
+            pointer-events: auto; /* Reativa o toque nos botões */
+            display: flex;
+            gap: 15px;
+            margin: 0 30px;
+        }
+
+        .btn {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: white;
+            user-select: none;
+        }
+
+        .btn:active {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Menu de Seleção Simples para Teste */
+        #role-selector {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 5px;
+            border-radius: 5px;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="role-selector">
+        <label><input type="radio" name="role" value="fireboy" checked> Fireboy</label>
+        <label><input type="radio" name="role" value="watergirl"> Watergirl</label>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div id="controls">
+        <div class="btn-group">
+            <div class="btn" id="btn-left">⬅️</div>
+            <div class="btn" id="btn-right">➡️</div>
+        </div>
+        <div class="btn-group">
+            <div class="btn" id="btn-jump">⬆️</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    
+    <script>
+        // Configuração do Jogo
+        const gameConfig = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            letterbox: "on",
+        };
+
+        // Carrega o Player Ruffle
+        window.RufflePlayer = window.RufflePlayer || {};
+        window.addEventListener("load", (event) => {
+            const ruffle = window.RufflePlayer.newest();
+            const player = ruffle.createPlayer();
+            const container = document.getElementById("game-container");
+            
+            container.appendChild(player);
+            player.load("jogo.swf"); // NOME DO SEU ARQUIVO AQUI
+            
+            // Ajustar foco para garantir que o teclado funcione
+            player.addEventListener('mouseenter', () => player.focus());
+            window.addEventListener('click', () => player.focus());
+        });
+
+        // Mapeamento de Teclas
+        const keys = {
+            fireboy: { left: 37, right: 39, up: 38 }, // Setas
+            watergirl: { left: 65, right: 68, up: 87 } // A, D, W
+        };
+
+        // Função para Simular Tecla Pressionada
+        function triggerKey(code, type) {
+            const event = new KeyboardEvent(type, {
+                bubbles: true, cancelable: true, keyCode: code, which: code
+            });
+            window.dispatchEvent(event);
+            document.dispatchEvent(event);
+        }
+
+        // Lógica dos Botões Touch
+        const setupButton = (id, action) => {
+            const btn = document.getElementById(id);
+            
+            const getCode = () => {
+                const role = document.querySelector('input[name="role"]:checked').value;
+                return keys[role][action];
+            };
+
+            // Touch Start (Pressionar)
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Evita zoom/scroll
+                triggerKey(getCode(), 'keydown');
+                btn.style.backgroundColor = "rgba(255, 255, 255, 0.6)";
+            });
+
+            // Touch End (Soltar)
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                triggerKey(getCode(), 'keyup');
+                btn.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
+            });
+        };
+
+        setupButton('btn-left', 'left');
+        setupButton('btn-right', 'right');
+        setupButton('btn-jump', 'up');
+
+    </script>
+</body>
+</html>
