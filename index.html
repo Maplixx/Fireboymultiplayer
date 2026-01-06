@@ -3,216 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fireboy & Watergirl Mobile V2</title>
+    <title>Fireboy & Watergirl Multiplayer</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
         * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
-        
         body {
-            margin: 0;
-            background-color: #1a1a1a;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            width: 100vw;
-            height: 100dvh; /* Altura dinâmica para celular */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0; background-color: #1a1a1a; overflow: hidden;
+            font-family: Arial, sans-serif; width: 100vw; height: 100dvh;
+            display: flex; justify-content: center; align-items: center; color: white;
         }
-
-        /* Área do Jogo (Janela) */
+        input, button { touch-action: auto; }
         #viewport {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 100%; height: 100%; overflow: hidden; position: relative;
+            display: flex; justify-content: center; align-items: center;
         }
-
         #game-wrapper {
-            /* O jogo será transformado (scale/translate) aqui */
-            transform-origin: center center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transform-origin: center center; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-
-        ruffle-player {
-            width: 800px; /* Largura base do Flash */
-            height: 600px; /* Altura base do Flash */
-            background: black;
-        }
-
-        /* --- CONTROLES --- */
+        ruffle-player { width: 800px; height: 600px; background: black; }
         #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100;
-            pointer-events: none; /* Deixa passar clique onde não tem botão */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none;
         }
-
-        /* D-PAD (Direcional) */
         .d-pad {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 180px;
-            height: 180px;
-            pointer-events: auto;
+            position: absolute; bottom: 20px; left: 20px; width: 180px; height: 180px; pointer-events: auto;
         }
-        
         .d-btn {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: white;
-            border-radius: 10px;
+            position: absolute; width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: white; border-radius: 10px;
         }
         .d-btn:active { background: rgba(255, 255, 255, 0.5); }
-
-        /* Posicionamento Cruz */
         .d-up { top: 0; left: 60px; }
         .d-down { bottom: 0; left: 60px; }
         .d-left { top: 60px; left: 0; }
         .d-right { top: 60px; right: 0; }
-
-        /* Botão Ação (Pulo/Enter) */
         .action-btn {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            width: 90px;
-            height: 90px;
-            background: rgba(255, 0, 0, 0.2);
-            border: 2px solid rgba(255, 100, 100, 0.5);
-            border-radius: 50%;
-            pointer-events: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 40px;
+            position: absolute; bottom: 40px; right: 40px; width: 90px; height: 90px;
+            background: rgba(255, 0, 0, 0.2); border: 2px solid rgba(255, 100, 100, 0.5);
+            border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center;
+            font-size: 40px; color: white;
         }
         .action-btn:active { background: rgba(255, 0, 0, 0.5); }
-
-        /* --- FERRAMENTAS DE AJUSTE (ZOOM) --- */
         #settings-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 200;
-            background: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 10px;
-            border-radius: 5px;
-            pointer-events: auto;
-            opacity: 0.5;
+            position: absolute; top: 10px; right: 10px; z-index: 200;
+            background: #333; color: white; border: 1px solid #555;
+            padding: 10px; border-radius: 5px; pointer-events: auto; opacity: 0.5;
         }
         #settings-panel {
-            position: absolute;
-            top: 50px;
-            right: 10px;
-            background: rgba(0,0,0,0.8);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: auto;
-            z-index: 200;
-            width: 200px;
+            position: absolute; top: 50px; right: 10px;
+            background: rgba(0,0,0,0.9); padding: 15px; border-radius: 10px;
+            color: white; display: none; flex-direction: column; gap: 10px;
+            pointer-events: auto; z-index: 200; width: 220px;
         }
-        
         .edit-overlay {
-            /* Camada invisível para arrastar o jogo */
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 255, 0, 0.1);
-            border: 4px dashed yellow;
-            z-index: 50;
-            display: none;
-            pointer-events: auto; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: yellow;
-            font-weight: bold;
-            text-shadow: 1px 1px black;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 255, 0, 0.1); border: 4px dashed yellow;
+            z-index: 50; display: none; pointer-events: auto; 
+            justify-content: center; align-items: center;
+            color: yellow; font-weight: bold; text-shadow: 1px 1px black;
         }
-
-        /* --- SELEÇÃO DE PERSONAGEM (MODAL) --- */
         #lobby-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 300;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 300;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .char-card {
-            background: #333;
-            padding: 20px;
-            margin: 10px;
-            border-radius: 10px;
-            text-align: center;
-            border: 2px solid transparent;
+        .menu-box {
+            background: #222; padding: 20px; border-radius: 10px; text-align: center; width: 300px;
         }
-        .selected { border-color: #0f0; background: #224422; }
-        .start-btn {
-            margin-top: 20px;
-            padding: 15px 40px;
-            font-size: 20px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .btn-main {
+            background: #007bff; color: white; border: none; padding: 10px 20px;
+            font-size: 16px; margin: 10px; border-radius: 5px; width: 80%;
         }
-
+        .btn-sec { background: #444; }
+        input[type="text"] {
+            width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #555;
+            background: #333; color: white; text-align: center;
+        }
+        #status-msg { margin-top: 10px; color: #aaa; font-size: 14px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="lobby-overlay">
-        <h2>Escolha seu Personagem</h2>
-        <div style="display:flex; gap: 20px;">
-            <div class="char-card selected" onclick="selectRole('fireboy', this)">
-                <h3>🔥 Fireboy</h3>
-                <small>Setas</small>
-            </div>
-            <div class="char-card" onclick="selectRole('watergirl', this)">
-                <h3>💧 Watergirl</h3>
-                <small>WASD</small>
-            </div>
+        <div class="menu-box" id="menu-start">
+            <h2>Multiplayer</h2>
+            <button class="btn-main" onclick="setupHost()">CRIAR SALA (Fireboy)</button>
+            <button class="btn-main btn-sec" onclick="showJoin()">ENTRAR (Watergirl)</button>
         </div>
-        <button class="start-btn" onclick="startGame()">JOGAR</button>
+
+        <div class="menu-box hidden" id="menu-host">
+            <h3>Sua Sala ID:</h3>
+            <input type="text" id="host-id-display" readonly>
+            <p id="status-host">Aguardando jogador...</p>
+            <button class="btn-main btn-sec" onclick="location.reload()">Cancelar</button>
+        </div>
+
+        <div class="menu-box hidden" id="menu-join">
+            <h3>Colar ID da Sala:</h3>
+            <input type="text" id="join-id-input" placeholder="Cole o ID aqui">
+            <button class="btn-main" onclick="joinRoom()">CONECTAR</button>
+            <button class="btn-main btn-sec" onclick="location.reload()">Voltar</button>
+            <p id="status-join"></p>
+        </div>
     </div>
 
     <div id="viewport">
-        <div id="edit-overlay" class="edit-overlay" style="display:none;">
-            ARRASTE PARA MOVER
-        </div>
-
-        <div id="game-wrapper">
-            </div>
+        <div id="edit-overlay" class="edit-overlay">ARRASTE PARA MOVER</div>
+        <div id="game-wrapper"></div>
     </div>
 
     <button id="settings-btn" onclick="toggleEditMode()">⚙️ Ajustar Tela</button>
     <div id="settings-panel">
         <label>Zoom: <span id="zoom-val">1.0</span>x</label>
         <input type="range" id="zoom-slider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateZoom(this.value)">
-        <small>Arraste a tela verde para mover o jogo.</small>
     </div>
 
-    <div id="ui-layer">
+    <div id="ui-layer" class="hidden">
         <div class="d-pad">
             <div class="d-btn d-up" id="btn-up">⬆</div>
             <div class="d-btn d-left" id="btn-left">⬅</div>
@@ -222,167 +132,169 @@
         <div class="action-btn" id="btn-jump">↟</div>
     </div>
 
-    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <script>
-        let currentRole = 'fireboy';
+        let myRole = null;
+        let peer = null;
+        let conn = null;
         let scale = 1.0;
-        let panX = 0;
-        let panY = 0;
+        let panX = 0, panY = 0;
         let isEditMode = false;
 
-        // --- Configuração do Ruffle ---
         window.RufflePlayer = window.RufflePlayer || {};
         window.addEventListener("load", (event) => {
             const ruffle = window.RufflePlayer.newest();
             const player = ruffle.createPlayer();
             const wrapper = document.getElementById("game-wrapper");
-            
             wrapper.appendChild(player);
-            
-            // Configurações para tentar forçar funcionamento
-            player.config = {
-                letterbox: "on",
-                autoplay: "on",
-                unmuteOverlay: "hidden"
-            };
-            
+            player.config = { letterbox: "on", autoplay: "on", unmuteOverlay: "hidden" };
             player.load("jogo.swf");
-
-            // Loop para garantir foco constante
-            setInterval(() => {
-                if(player.hasFocus === false) player.focus();
-            }, 1000);
+            setInterval(() => { if(!player.hasFocus) player.focus(); }, 1000);
         });
 
-        // --- Lógica de Seleção de Personagem ---
-        function selectRole(role, elem) {
-            currentRole = role;
-            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
-            elem.classList.add('selected');
-        }
+        const keyDefinitions = {
+            'ArrowUp':    { keyCode: 38, key: 'ArrowUp',    code: 'ArrowUp' },
+            'ArrowDown':  { keyCode: 40, key: 'ArrowDown',  code: 'ArrowDown' },
+            'ArrowLeft':  { keyCode: 37, key: 'ArrowLeft',  code: 'ArrowLeft' },
+            'ArrowRight': { keyCode: 39, key: 'ArrowRight', code: 'ArrowRight' },
+            'KeyW': { keyCode: 87, key: 'w', code: 'KeyW' },
+            'KeyS': { keyCode: 83, key: 's', code: 'KeyS' },
+            'KeyA': { keyCode: 65, key: 'a', code: 'KeyA' },
+            'KeyD': { keyCode: 68, key: 'd', code: 'KeyD' }
+        };
 
-        function startGame() {
-            document.getElementById('lobby-overlay').style.display = 'none';
-            // Entrar em tela cheia se possível
-            try { document.documentElement.requestFullscreen(); } catch(e){}
-        }
-
-        // --- Lógica de Input (Teclado Virtual) ---
-        // Fireboy: Setas | Watergirl: WASD
-        const keyMap = {
+        const roleMap = {
             fireboy:   { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' },
             watergirl: { up: 'KeyW',    down: 'KeyS',      left: 'KeyA',      right: 'KeyD' }
         };
 
-        const keyCodes = {
-            'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
-            'KeyW': 87, 'KeyS': 83, 'KeyA': 65, 'KeyD': 68
-        };
-
-        function simulateKey(action, type) {
-            const code = keyMap[currentRole][action];
-            const keyCode = keyCodes[code];
+        function setupHost() {
+            document.getElementById('menu-start').classList.add('hidden');
+            document.getElementById('menu-host').classList.remove('hidden');
+            myRole = 'fireboy';
             
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('host-id-display').value = id;
+            });
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+                document.getElementById('status-host').innerText = "Jogador Conectado! Iniciando...";
+                setTimeout(startGame, 1000);
+            });
+        }
+
+        function showJoin() {
+            document.getElementById('menu-start').classList.add('hidden');
+            document.getElementById('menu-join').classList.remove('hidden');
+        }
+
+        function joinRoom() {
+            const id = document.getElementById('join-id-input').value;
+            if(!id) return;
+            document.getElementById('status-join').innerText = "Conectando...";
+            myRole = 'watergirl';
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(id);
+                conn.on('open', () => {
+                    setupConnection();
+                    document.getElementById('status-join').innerText = "Conectado!";
+                    setTimeout(startGame, 1000);
+                });
+            });
+        }
+
+        function setupConnection() {
+            conn.on('data', (data) => {
+                execKey(data.role, data.action, data.type);
+            });
+        }
+
+        function startGame() {
+            document.getElementById('lobby-overlay').style.display = 'none';
+            document.getElementById('ui-layer').classList.remove('hidden');
+            try { document.documentElement.requestFullscreen(); } catch(e){}
+        }
+
+        function execKey(role, action, type) {
+            const defId = roleMap[role][action];
+            const def = keyDefinitions[defId];
+            if (!def) return;
+
             const eventOptions = {
-                key: code,
-                code: code,
-                keyCode: keyCode,
-                which: keyCode,
-                bubbles: true,
-                cancelable: true,
-                view: window
+                key: def.key, code: def.code, keyCode: def.keyCode,
+                which: def.keyCode, bubbles: true, cancelable: true, view: window
             };
-
             const player = document.querySelector('ruffle-player');
-            
-            if(player) {
-                // Força o foco antes de enviar
-                player.focus();
-                
-                // Dispara evento nativo
-                player.dispatchEvent(new KeyboardEvent(type, eventOptions));
-            }
+            if(player) player.dispatchEvent(new KeyboardEvent(type, eventOptions));
         }
 
         function setupBtn(id, action) {
             const btn = document.getElementById(id);
-            btn.addEventListener('touchstart', (e) => {
+            const handle = (e, type) => {
                 e.preventDefault();
-                simulateKey(action, 'keydown');
-                btn.style.background = "rgba(255,255,255,0.5)";
-            });
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                simulateKey(action, 'keyup');
-                btn.style.background = "";
-            });
+                if(myRole) {
+                    execKey(myRole, action, type);
+                    if(conn && conn.open) {
+                        conn.send({ role: myRole, action: action, type: type });
+                    }
+                }
+                btn.style.background = type === 'keydown' ? "rgba(255,255,255,0.5)" : "";
+            };
+            btn.addEventListener('touchstart', (e) => handle(e, 'keydown'));
+            btn.addEventListener('touchend', (e) => handle(e, 'keyup'));
         }
 
         setupBtn('btn-up', 'up');
         setupBtn('btn-down', 'down');
         setupBtn('btn-left', 'left');
         setupBtn('btn-right', 'right');
-        setupBtn('btn-jump', 'up'); // Botão extra de pulo (mesma tecla de Up)
+        setupBtn('btn-jump', 'up');
 
-        // --- Lógica de Zoom e Pan (Ajuste de Tela) ---
         function toggleEditMode() {
             isEditMode = !isEditMode;
             const panel = document.getElementById('settings-panel');
             const overlay = document.getElementById('edit-overlay');
             const btn = document.getElementById('settings-btn');
+            const ui = document.getElementById('ui-layer');
 
             if(isEditMode) {
-                panel.style.display = 'flex';
-                overlay.style.display = 'flex';
-                btn.innerText = "✅ Salvar Posição";
-                btn.style.opacity = "1";
-                document.getElementById('ui-layer').style.display = 'none'; // Esconde controles ao editar
+                panel.style.display = 'flex'; overlay.style.display = 'flex';
+                btn.innerText = "✅ Salvar"; btn.style.background = "#28a745"; btn.style.opacity = "1";
+                ui.style.display = 'none';
             } else {
-                panel.style.display = 'none';
-                overlay.style.display = 'none';
-                btn.innerText = "⚙️ Ajustar Tela";
-                btn.style.opacity = "0.5";
-                document.getElementById('ui-layer').style.display = 'block'; // Volta controles
+                panel.style.display = 'none'; overlay.style.display = 'none';
+                btn.innerText = "⚙️ Ajustar Tela"; btn.style.background = "#333"; btn.style.opacity = "0.5";
+                ui.style.display = 'block';
             }
         }
 
         function updateTransform() {
-            const wrapper = document.getElementById('game-wrapper');
-            wrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            document.getElementById('game-wrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
         }
-
         function updateZoom(val) {
             scale = parseFloat(val);
             document.getElementById('zoom-val').innerText = scale.toFixed(1);
             updateTransform();
         }
 
-        // Lógica de Arrastar (Pan)
         const overlay = document.getElementById('edit-overlay');
-        let isDragging = false;
-        let startX, startY, initialPanX, initialPanY;
-
+        let isDragging = false, startX, startY, initX, initY;
         overlay.addEventListener('touchstart', (e) => {
             if(!isEditMode) return;
             isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            initialPanX = panX;
-            initialPanY = panY;
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+            initX = panX; initY = panY;
         });
-
         overlay.addEventListener('touchmove', (e) => {
             if(!isDragging || !isEditMode) return;
             e.preventDefault();
-            const dx = e.touches[0].clientX - startX;
-            const dy = e.touches[0].clientY - startY;
-            panX = initialPanX + dx;
-            panY = initialPanY + dy;
+            panX = initX + (e.touches[0].clientX - startX);
+            panY = initY + (e.touches[0].clientY - startY);
             updateTransform();
         });
-
-        overlay.addEventListener('touchend', () => { isDragging = false; });
-
+        overlay.addEventListener('touchend', () => isDragging = false);
     </script>
 </body>
 </html>
