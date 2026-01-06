@@ -3,124 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fireboy Multiplayer Streaming</title>
+    <title>Fireboy V11 Smart Reset</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
-        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+        /* --- RESET CSS --- */
+        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         body {
             margin: 0; 
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            width: 100vw; height: 100dvh;
-            color: white;
+            background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            overflow: hidden; font-family: 'Segoe UI', sans-serif;
+            width: 100vw; height: 100dvh; color: white;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* --- GLASS DESIGN --- */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 30px;
-            width: 90%; max-width: 400px;
-            text-align: center;
-            display: flex; flex-direction: column; gap: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        h2 { margin: 0 0 10px 0; font-size: 22px; }
-        p { margin: 0; color: #aaa; font-size: 14px; }
+        /* --- UI ELEMENTS --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px;
+            padding: 30px; width: 90%; max-width: 380px; text-align: center;
+            display: flex; flex-direction: column; gap: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        h2 { margin: 0; font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        p { margin: 0; color: #bbb; font-size: 14px; }
 
         input {
-            width: 100%; padding: 15px; border-radius: 12px;
-            border: 1px solid #444; background: #222;
-            color: white; font-size: 18px; text-align: center; outline: none;
+            width: 100%; padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.3); color: white; font-size: 18px; text-align: center; outline: none;
+            transition: 0.3s;
         }
+        input:focus { border-color: #0a84ff; background: rgba(0,0,0,0.5); transform: scale(1.02); }
 
+        /* BUTTON ANIMATIONS */
         button {
-            width: 100%; padding: 16px; border-radius: 14px;
-            border: none; font-size: 16px; font-weight: bold; cursor: pointer;
-            transition: transform 0.1s;
-        }
-        button:active { transform: scale(0.96); }
-
-        .btn-primary { background: #0a84ff; color: white; }
-        .btn-sec { background: rgba(255,255,255,0.1); color: #ccc; }
-        .btn-fire { background: linear-gradient(90deg, #d32f2f, #f44336); color: white; }
-        .btn-water { background: linear-gradient(90deg, #1976d2, #2196f3); color: white; }
-
-        /* --- SCREENS --- */
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top:0; left:0; justify-content: center; align-items: center; z-index: 50; }
-        .active { display: flex; }
-
-        /* --- GAME & VIDEO --- */
-        #game-view {
-            width: 100%; height: 100%; display: none; position: relative;
-            background: #000; justify-content: center; align-items: center;
+            width: 100%; padding: 16px; border-radius: 14px; border: none;
+            font-size: 16px; font-weight: 700; cursor: pointer; position: relative; overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         
-        #game-wrapper { transform-origin: center; display: flex; justify-content: center; align-items: center; }
+        button:active { transform: scale(0.95); filter: brightness(0.9); }
         
-        /* O Host usa o Ruffle, o Cliente usa o Video */
-        ruffle-player { width: 800px; height: 600px; background: black; display: none; } 
-        video { width: 800px; height: 600px; background: black; display: none; object-fit: contain; }
+        .btn-primary { 
+            background: linear-gradient(135deg, #0061ff, #60efff); color: #002a5c; 
+            box-shadow: 0 4px 15px rgba(0, 97, 255, 0.3);
+        }
+        .btn-sec { background: rgba(255,255,255,0.1); color: #ddd; }
+        .btn-fire { background: linear-gradient(135deg, #ff9966, #ff5e62); color: white; box-shadow: 0 4px 15px rgba(255, 94, 98, 0.3); }
+        .btn-water { background: linear-gradient(135deg, #56CCF2, #2F80ED); color: white; box-shadow: 0 4px 15px rgba(47, 128, 237, 0.3); }
 
-        /* --- CONTROLS --- */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; display: none; }
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top:0; left:0; justify-content: center; align-items: center; z-index: 50; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .active { display: flex; opacity: 1; pointer-events: all; }
+
+        /* --- COUNTDOWN OVERLAY --- */
+        #countdown-layer {
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.8); z-index: 999; display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        #countdown-num { font-size: 120px; font-weight: bold; color: white; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+        /* --- JOGO --- */
+        #game-view { width: 100%; height: 100%; display: none; position: relative; background: #000; justify-content: center; align-items: center; }
+        #game-wrapper { transform-origin: center; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        ruffle-player { width: 800px; height: 600px; background: black; }
+
+        /* --- CONTROLES --- */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
         
         .d-pad { position: absolute; bottom: 20px; left: 20px; width: 180px; height: 180px; pointer-events: auto; }
         .d-btn {
             position: absolute; width: 60px; height: 60px;
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
             display: flex; justify-content: center; align-items: center;
-            font-size: 24px; color: white; border-radius: 12px;
+            font-size: 24px; color: white; border-radius: 12px; backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.1s;
         }
-        .d-btn:active { background: rgba(255, 255, 255, 0.4); }
-        .d-up { top: 0; left: 60px; } .d-down { bottom: 0; left: 60px; }
-        .d-left { top: 60px; left: 0; } .d-right { top: 60px; right: 0; }
+        .d-btn:active { background: rgba(255,255,255,0.5); transform: translateY(2px); }
+        .d-up { top:0; left:60px; } .d-down { bottom:0; left:60px; }
+        .d-left { top:60px; left:0; } .d-right { top:60px; right:0; }
         
         .action-btn {
             position: absolute; bottom: 40px; right: 40px; width: 90px; height: 90px;
-            background: rgba(255, 0, 0, 0.2); border: 2px solid rgba(255, 100, 100, 0.5);
+            background: rgba(255, 59, 48, 0.2); border: 2px solid rgba(255, 59, 48, 0.5);
             border-radius: 50%; pointer-events: auto; backdrop-filter: blur(5px);
             display: flex; justify-content: center; align-items: center; font-size: 40px; color: white;
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.2);
+            transition: transform 0.1s;
         }
-        .action-btn:active { background: rgba(255, 0, 0, 0.6); }
+        .action-btn:active { background: rgba(255, 59, 48, 0.6); transform: scale(0.95); }
 
-        /* --- SETTINGS --- */
-        #settings-btn {
-            position: absolute; top: 10px; right: 10px; z-index: 200;
-            background: rgba(0,0,0,0.5); color: white; border: none;
-            padding: 8px 12px; border-radius: 20px; pointer-events: auto; backdrop-filter: blur(10px); width: auto;
+        /* --- TOP BAR --- */
+        #top-bar {
+            position: absolute; top: 10px; right: 10px; z-index: 200; pointer-events: auto;
+            display: flex; gap: 10px;
         }
+        .small-btn {
+            background: rgba(0,0,0,0.6); color: white; border: 1px solid #555;
+            padding: 8px 15px; border-radius: 20px; font-size: 12px; cursor: pointer;
+            backdrop-filter: blur(4px); transition: 0.2s;
+        }
+        .small-btn:hover { background: rgba(255,255,255,0.2); }
+        
         #settings-panel {
             position: absolute; top: 50px; right: 10px;
             background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 20px;
             color: white; display: none; flex-direction: column; gap: 15px;
-            pointer-events: auto; z-index: 200; width: 250px; border: 1px solid #333;
+            pointer-events: auto; z-index: 200; width: 240px; border: 1px solid #333;
+            animation: slideDown 0.3s ease;
         }
+        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
         .edit-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border: 4px dashed #ffd60a; z-index: 50; display: none; pointer-events: auto; 
             justify-content: center; align-items: center; color: #ffd60a; font-weight: bold; background: rgba(0,0,0,0.5);
         }
-        
-        .loading-text { color: #0a84ff; font-weight: bold; margin-top: 10px; display:none;}
     </style>
 </head>
 <body>
 
     <div id="screen-login" class="screen active">
         <div class="glass-panel">
-            <h2>Fireboy Stream</h2>
-            <p>Digite seu apelido</p>
-            <input type="text" id="input-nick" placeholder="Apelido..." maxlength="10">
+            <h2>🔥 & 💧 V11</h2>
+            <p>Smart Sync Edition</p>
+            <input type="text" id="input-nick" placeholder="Seu apelido..." maxlength="10">
             <button class="btn-primary" onclick="saveNickAndGo()">CONTINUAR</button>
         </div>
     </div>
@@ -128,27 +148,27 @@
     <div id="screen-menu" class="screen">
         <div class="glass-panel">
             <h2 id="greet-msg">Olá</h2>
-            <button class="btn-primary" onclick="toRoleSelection()">CRIAR SALA (HOST)</button>
-            <button class="btn-sec" onclick="toJoinScreen()">ENTRAR (CLIENTE)</button>
-            <p style="font-size:11px; margin-top:10px;">O Host deve ser o celular mais potente.</p>
+            <button class="btn-primary" onclick="toRoleSelection()">CRIAR SALA</button>
+            <button class="btn-sec" onclick="toJoinScreen()">ENTRAR EM SALA</button>
         </div>
     </div>
 
     <div id="screen-role" class="screen">
         <div class="glass-panel">
-            <h2>Escolha seu Personagem</h2>
-            <button class="btn-fire" onclick="setupHost('fireboy')">🔥 JOGAR COMO FIREBOY</button>
-            <button class="btn-water" onclick="setupHost('watergirl')">💧 JOGAR COMO WATERGIRL</button>
+            <h2>Quem você será?</h2>
+            <button class="btn-fire" onclick="setupHost('fireboy')">🔥 FIREBOY</button>
+            <button class="btn-water" onclick="setupHost('watergirl')">💧 WATERGIRL</button>
             <button class="btn-sec" onclick="backToMenu()">Voltar</button>
         </div>
     </div>
 
     <div id="screen-host-lobby" class="screen">
         <div class="glass-panel">
-            <h3>Código da Sala</h3>
-            <input type="text" id="host-code" readonly style="font-size: 26px; letter-spacing: 3px; color: #32d74b; font-weight:bold;">
-            <p id="host-status">Aguardando conexão...</p>
-            <div id="loading-host" class="loading-text">Iniciando Stream... 🎥</div>
+            <h3>SALA CRIADA</h3>
+            <p>Compartilhe o código:</p>
+            <input type="text" id="host-code" readonly style="font-size: 28px; color: #32d74b; font-weight:bold; letter-spacing: 2px;">
+            <p id="host-status">Aguardando Player 2...</p>
+            <button id="btn-start-game" class="btn-primary" onclick="triggerStartGame()" disabled style="opacity: 0.5;">INICIAR JOGO</button>
             <button class="btn-sec" onclick="location.reload()">Cancelar</button>
         </div>
     </div>
@@ -158,24 +178,29 @@
             <h3>Entrar na Sala</h3>
             <input type="text" id="join-code" placeholder="CÓDIGO" maxlength="6" style="text-transform: uppercase;">
             <button class="btn-primary" onclick="joinRoom()">CONECTAR</button>
-            <p id="join-status">Certifique-se de estar no Wi-Fi.</p>
+            <p id="join-status">Aguardando...</p>
             <button class="btn-sec" onclick="backToMenu()">Voltar</button>
         </div>
     </div>
 
+    <div id="countdown-layer">
+        <div style="color:white; margin-bottom: 20px;">Sincronizando Fase...</div>
+        <div id="countdown-num">3</div>
+    </div>
+
     <div id="game-view">
-        <div id="edit-overlay" class="edit-overlay">ARRASTE PARA CENTRALIZAR</div>
-        
-        <div id="game-wrapper">
-            <ruffle-player id="ruffle-instance"></ruffle-player>
-            <video id="remote-video" autoplay playsinline></video>
+        <div id="top-bar">
+            <button class="small-btn" onclick="sendResetSignal()">🔄 Sincronizar Fase</button>
+            <button class="small-btn" onclick="toggleEditMode()">⚙️ Ajustes</button>
         </div>
 
-        <button id="settings-btn" onclick="toggleEditMode()">⚙️ Ajustes</button>
+        <div id="edit-overlay" class="edit-overlay">ARRASTE PARA MOVER A TELA</div>
+        <div id="game-wrapper"></div>
+        
         <div id="settings-panel">
             <label>Zoom: <span id="zoom-val">1.0</span>x</label>
-            <input type="range" id="zoom-slider" min="0.5" max="2.5" step="0.1" value="1.0" oninput="updateZoom(this.value)">
-            <button class="btn-primary" onclick="toggleEditMode()">Concluir</button>
+            <input type="range" id="zoom-slider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateZoom(this.value)">
+            <button class="btn-sec" onclick="toggleEditMode()">OK</button>
         </div>
 
         <div id="ui-layer">
@@ -190,20 +215,18 @@
     </div>
 
     <script>
-        // --- VARIAVEIS ---
+        // --- GLOBAIS ---
         let myNick = localStorage.getItem('fb_nick') || "";
-        let myRole = ""; 
-        let isHost = false;
-        let peer, conn, mediaCall;
+        let myRole = "", peer, conn;
         let scale = 1.0, panX = 0, panY = 0, isEditMode = false;
+        if(myNick) document.getElementById('input-nick').value = myNick;
 
-        // --- NAVEGAÇÃO ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         }
-        if(myNick) document.getElementById('input-nick').value = myNick;
 
+        // --- NAVEGAÇÃO ---
         function saveNickAndGo() {
             myNick = document.getElementById('input-nick').value.trim() || "Player";
             localStorage.setItem('fb_nick', myNick);
@@ -212,191 +235,173 @@
         }
         function toRoleSelection() { showScreen('screen-role'); }
         function toJoinScreen() { showScreen('screen-join'); }
-        function backToMenu() { location.reload(); }
+        function backToMenu() { showScreen('screen-menu'); }
 
-        // --- HOST (STREAMER) LOGIC ---
+        // --- PEERJS (HOST) ---
         function setupHost(role) {
-            isHost = true;
             myRole = role;
             showScreen('screen-host-lobby');
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            peer = new Peer(code);
 
-            // 1. Carrega o jogo escondido para preparar
-            loadRuffleGame();
-
-            // 2. Cria Peer
-            const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-            peer = new Peer(id);
-
-            peer.on('open', (peerId) => {
-                document.getElementById('host-code').value = peerId;
-            });
-
+            peer.on('open', (id) => document.getElementById('host-code').value = id);
             peer.on('connection', (c) => {
                 conn = c;
-                document.getElementById('host-status').innerText = "Cliente Conectado!";
-                setupDataConnection();
-                
-                // Inicia transmissão assim que conecta dados
-                startStreamingToClient(conn.peer);
+                setupConnection();
             });
         }
 
-        async function startStreamingToClient(remotePeerId) {
-            document.getElementById('loading-host').style.display = 'block';
-            
-            // Aguarda o Ruffle renderizar algo
-            setTimeout(async () => {
-                const player = document.getElementById('ruffle-instance');
-                // Tenta pegar o canvas de dentro do ShadowDOM do Ruffle
-                const canvas = player.shadowRoot ? player.shadowRoot.querySelector('canvas') : player.querySelector('canvas');
-                
-                if(!canvas) {
-                    alert("Erro: Não foi possível capturar o jogo. Tente recarregar.");
-                    return;
-                }
-
-                // Captura stream a 30fps
-                const stream = canvas.captureStream(30);
-                
-                // Liga para o cliente com o vídeo
-                const call = peer.call(remotePeerId, stream);
-                
-                // Muda para tela do jogo
-                enterGameView();
-                
-                // Envia info inicial
-                conn.send({ type: 'init', hostRole: myRole });
-
-            }, 3000); // 3 segundos para garantir que o Ruffle carregou
-        }
-
-        function loadRuffleGame() {
-            const player = document.getElementById('ruffle-instance');
-            player.style.display = 'block'; // Host vê o Ruffle
-            
-            window.RufflePlayer = window.RufflePlayer || {};
-            const ruffle = window.RufflePlayer.newest();
-            
-            // Configurações do Ruffle
-            player.config = { letterbox: "on", autoplay: "on", unmuteOverlay: "hidden", backgroundColor: "#000000" };
-            player.load("jogo.swf");
-            
-            // Loop de Foco
-            setInterval(() => { if(!player.hasFocus) player.focus(); }, 1000);
-        }
-
-        // --- CLIENT (VIEWER) LOGIC ---
+        // --- PEERJS (CLIENT) ---
         function joinRoom() {
-            isHost = false;
             const code = document.getElementById('join-code').value.toUpperCase();
             if(code.length < 4) return;
-
             document.getElementById('join-status').innerText = "Conectando...";
             peer = new Peer();
-
             peer.on('open', () => {
                 conn = peer.connect(code);
                 conn.on('open', () => {
-                    document.getElementById('join-status').innerText = "Conectado! Aguardando Vídeo...";
-                    setupDataConnection();
+                    document.getElementById('join-status').innerText = "Conectado!";
+                    conn.send({ type: 'handshake', nick: myNick });
                 });
+                setupConnection();
             });
-
-            peer.on('call', (call) => {
-                // Recebeu a ligação de vídeo do Host
-                document.getElementById('join-status').innerText = "Vídeo Recebido! Abrindo...";
-                call.answer(); // Atende
-                call.on('stream', (remoteStream) => {
-                    const video = document.getElementById('remote-video');
-                    video.style.display = 'block'; // Cliente vê o Vídeo
-                    video.srcObject = remoteStream;
-                    enterGameView();
-                });
-            });
-
-            peer.on('error', () => { document.getElementById('join-status').innerText = "Sala não encontrada."; });
+            peer.on('error', () => document.getElementById('join-status').innerText = "Erro: Sala não existe.");
         }
 
-        // --- COMMON LOGIC ---
-        function setupDataConnection() {
+        // --- LÓGICA DE REDE ---
+        function setupConnection() {
             conn.on('data', (data) => {
-                // Se sou Cliente, recebo qual é meu papel
-                if(!isHost && data.type === 'init') {
+                if(data.type === 'handshake') {
+                    document.getElementById('host-status').innerText = data.nick + " Entrou!";
+                    const btn = document.getElementById('btn-start-game');
+                    btn.disabled = false; btn.style.opacity = "1";
+                    conn.send({ type: 'handshake_back', hostRole: myRole });
+                }
+                if(data.type === 'handshake_back') {
+                    document.getElementById('join-status').innerText = "Pronto!";
                     myRole = (data.hostRole === 'fireboy') ? 'watergirl' : 'fireboy';
-                    showToast("Você é: " + (myRole === 'fireboy' ? "🔥 Fireboy" : "💧 Watergirl"));
                 }
-                
-                // Se sou Host, recebo Inputs do Cliente e aplico no Ruffle
-                if(isHost && data.type === 'input') {
-                    execKeyHost(data.role, data.action, data.keyType);
-                }
+                if(data.type === 'start_game') injectGame();
+                if(data.type === 'sync_reset') startSyncCountdown(); // RESET INTELIGENTE
+                if(data.type === 'input') execKey(data.role, data.action, data.keyType);
             });
         }
 
-        function enterGameView() {
+        function triggerStartGame() {
+            conn.send({ type: 'start_game' });
+            injectGame();
+        }
+
+        // --- RESET INTELIGENTE & COUNTDOWN ---
+        function sendResetSignal() {
+            // Envia para o outro e roda local
+            if(conn && conn.open) conn.send({ type: 'sync_reset' });
+            startSyncCountdown();
+        }
+
+        function startSyncCountdown() {
+            const layer = document.getElementById('countdown-layer');
+            const num = document.getElementById('countdown-num');
+            layer.style.display = 'flex';
+            
+            // Simula o ESC + Enter (Macro) para tentar abrir o menu
+            simulateResetMacro();
+
+            let count = 3;
+            num.innerText = count;
+            num.style.animation = 'none';
+            num.offsetHeight; /* trigger reflow */
+            num.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+            const timer = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    num.innerText = count;
+                    num.style.animation = 'none';
+                    num.offsetHeight; 
+                    num.style.animation = 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                } else {
+                    clearInterval(timer);
+                    layer.style.display = 'none';
+                    // Fim do bloqueio, jogadores podem se mover
+                }
+            }, 1000);
+        }
+
+        function simulateResetMacro() {
+            // Tenta ajudar o player pressionando ESC e depois Enter automaticamente
+            // Isso cobre a lógica de "quem está vivo abre menu, quem morreu confirma"
+            const player = document.querySelector('ruffle-player');
+            if(!player) return;
+
+            // 1. Envia ESC (Para quem está vivo abrir menu)
+            const escEvt = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true });
+            player.dispatchEvent(escEvt);
+            setTimeout(() => player.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true })), 100);
+
+            // 2. Envia Espaço/Enter (Para confirmar Restart ou Retry)
+            setTimeout(() => {
+                const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true });
+                player.dispatchEvent(enterEvt);
+                player.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+                
+                // Tenta Space também por garantia
+                const spaceEvt = new KeyboardEvent('keydown', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true });
+                player.dispatchEvent(spaceEvt);
+                player.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true }));
+            }, 300);
+        }
+
+        function injectGame() {
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById('game-view').style.display = 'flex';
-            document.getElementById('ui-layer').style.display = 'block';
-            try { document.documentElement.requestFullscreen(); } catch(e){}
+            
+            // Só cria se não existir
+            if(!document.querySelector('ruffle-player')) {
+                const ruffle = window.RufflePlayer.newest();
+                const player = ruffle.createPlayer();
+                const wrapper = document.getElementById("game-wrapper");
+                
+                player.style.width = "800px";
+                player.style.height = "600px";
+                wrapper.appendChild(player);
+                
+                player.config = { letterbox: "on", autoplay: "on", unmuteOverlay: "hidden", backgroundColor: "#000000" };
+                player.load("jogo.swf");
+
+                setInterval(() => { if(!player.hasFocus) player.focus(); }, 1000);
+                try { document.documentElement.requestFullscreen(); } catch(e){}
+            }
         }
 
-        function showToast(msg) {
-            const div = document.createElement('div');
-            div.innerText = msg;
-            div.style.cssText = "position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:10px; z-index:999;";
-            document.body.appendChild(div);
-            setTimeout(()=>div.remove(), 3000);
-        }
-
-        // --- INPUT HANDLING ---
-        const keyDefinitions = {
-            'ArrowUp':    { keyCode: 38, key: 'ArrowUp',    code: 'ArrowUp' },
-            'ArrowDown':  { keyCode: 40, key: 'ArrowDown',  code: 'ArrowDown' },
-            'ArrowLeft':  { keyCode: 37, key: 'ArrowLeft',  code: 'ArrowLeft' },
-            'ArrowRight': { keyCode: 39, key: 'ArrowRight', code: 'ArrowRight' },
-            'KeyW': { keyCode: 87, key: 'w', code: 'KeyW' },
-            'KeyS': { keyCode: 83, key: 's', code: 'KeyS' },
-            'KeyA': { keyCode: 65, key: 'a', code: 'KeyA' },
-            'KeyD': { keyCode: 68, key: 'd', code: 'KeyD' }
-        };
-
-        const roleMap = {
+        // --- INPUTS ---
+        const keyMap = {
             fireboy:   { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' },
             watergirl: { up: 'KeyW',    down: 'KeyS',      left: 'KeyA',      right: 'KeyD' }
         };
+        const keyCodes = {
+            'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
+            'KeyW': 87, 'KeyS': 83, 'KeyA': 65, 'KeyD': 68
+        };
 
-        // Função que realmente aperta a tecla (Só roda no Host)
-        function execKeyHost(role, action, type) {
-            const defId = roleMap[role][action];
-            const def = keyDefinitions[defId];
-            if (!def) return;
-
-            const eventOptions = {
-                key: def.key, code: def.code, keyCode: def.keyCode,
-                which: def.keyCode, bubbles: true, cancelable: true, view: window
-            };
+        function execKey(role, action, type) {
+            const code = keyMap[role][action];
+            const kCode = keyCodes[code];
+            const eventOptions = { key: (role==='watergirl'?code.replace('Key','').toLowerCase():code), code: code, keyCode: kCode, which: kCode, bubbles: true, cancelable: true, view: window };
+            
             const player = document.querySelector('ruffle-player');
             if(player) player.dispatchEvent(new KeyboardEvent(type, eventOptions));
         }
 
-        // Função dos botões touch
         function setupBtn(id, action) {
             const btn = document.getElementById(id);
             const handle = (e, type) => {
                 e.preventDefault();
-                
-                // Se sou Host, executo localmente
-                if(isHost) {
-                    if(myRole) execKeyHost(myRole, action, type);
-                } 
-                // Se sou Cliente, envio para o Host
-                else {
-                    if(conn && conn.open && myRole) {
-                        conn.send({ type: 'input', role: myRole, action: action, keyType: type });
-                    }
+                if(myRole) {
+                    execKey(myRole, action, type);
+                    if(conn && conn.open) conn.send({ type: 'input', role: myRole, action: action, keyType: type });
                 }
-                
-                btn.style.background = type === 'keydown' ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.1)";
+                btn.style.background = type === 'keydown' ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)";
             };
             btn.addEventListener('touchstart', (e) => handle(e, 'keydown'));
             btn.addEventListener('touchend', (e) => handle(e, 'keyup'));
@@ -406,46 +411,24 @@
         setupBtn('btn-left', 'left'); setupBtn('btn-right', 'right');
         setupBtn('btn-jump', 'up');
 
-        // --- ZOOM & PAN (Funciona tanto no Ruffle quanto no Video) ---
+        // --- ZOOM & PAN ---
         function toggleEditMode() {
             isEditMode = !isEditMode;
-            const panel = document.getElementById('settings-panel');
-            const overlay = document.getElementById('edit-overlay');
-            const ui = document.getElementById('ui-layer');
-
-            if(isEditMode) {
-                panel.style.display = 'flex'; overlay.style.display = 'flex';
-                ui.style.display = 'none';
-            } else {
-                panel.style.display = 'none'; overlay.style.display = 'none';
-                ui.style.display = 'block';
-            }
+            document.getElementById('settings-panel').style.display = isEditMode ? 'flex' : 'none';
+            document.getElementById('edit-overlay').style.display = isEditMode ? 'flex' : 'none';
         }
-
-        function updateTransform() {
-            // Aplica no Wrapper, afetando ou Ruffle ou Video
-            document.getElementById('game-wrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-        }
-        function updateZoom(val) {
-            scale = parseFloat(val);
-            document.getElementById('zoom-val').innerText = scale.toFixed(1);
-            updateTransform();
-        }
+        function updateTransform() { document.getElementById('game-wrapper').style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`; }
+        function updateZoom(val) { scale = parseFloat(val); document.getElementById('zoom-val').innerText = scale.toFixed(1); updateTransform(); }
 
         const overlay = document.getElementById('edit-overlay');
         let isDragging = false, startX, startY, initX, initY;
         overlay.addEventListener('touchstart', (e) => {
             if(!isEditMode) return;
-            isDragging = true;
-            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-            initX = panX; initY = panY;
+            isDragging = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY; initX = panX; initY = panY;
         });
         overlay.addEventListener('touchmove', (e) => {
-            if(!isDragging || !isEditMode) return;
-            e.preventDefault();
-            panX = initX + (e.touches[0].clientX - startX);
-            panY = initY + (e.touches[0].clientY - startY);
-            updateTransform();
+            if(!isDragging || !isEditMode) return; e.preventDefault();
+            panX = initX + (e.touches[0].clientX - startX); panY = initY + (e.touches[0].clientY - startY); updateTransform();
         });
         overlay.addEventListener('touchend', () => isDragging = false);
 
