@@ -3,167 +3,385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fireboy & Watergirl Mobile</title>
+    <title>Fireboy & Watergirl Mobile V2</title>
     <style>
+        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+        
         body {
             margin: 0;
-            background-color: #000;
-            overflow: hidden; /* Remove barras de rolagem */
-            touch-action: none; /* Impede zoom e rolagem no celular */
+            background-color: #1a1a1a;
+            overflow: hidden;
             font-family: Arial, sans-serif;
-        }
-
-        #game-container {
             width: 100vw;
-            height: 100vh;
+            height: 100dvh; /* Altura dinâmica para celular */
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1;
         }
 
-        /* Camada de Controles (Overlay) */
-        #controls {
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Área do Jogo (Janela) */
+        #viewport {
             width: 100%;
             height: 100%;
-            z-index: 10;
-            pointer-events: none; /* Deixa clicar no jogo se não tocar no botão */
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding-bottom: 20px;
-            box-sizing: border-box;
-        }
-
-        .btn-group {
-            pointer-events: auto; /* Reativa o toque nos botões */
-            display: flex;
-            gap: 15px;
-            margin: 0 30px;
-        }
-
-        .btn {
-            width: 80px;
-            height: 80px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 30px;
-            color: white;
-            user-select: none;
         }
 
-        .btn:active {
-            background-color: rgba(255, 255, 255, 0.5);
+        #game-wrapper {
+            /* O jogo será transformado (scale/translate) aqui */
+            transform-origin: center center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* Menu de Seleção Simples para Teste */
-        #role-selector {
+        ruffle-player {
+            width: 800px; /* Largura base do Flash */
+            height: 600px; /* Altura base do Flash */
+            background: black;
+        }
+
+        /* --- CONTROLES --- */
+        #ui-layer {
             position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 5px;
-            border-radius: 5px;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            pointer-events: none; /* Deixa passar clique onde não tem botão */
+        }
+
+        /* D-PAD (Direcional) */
+        .d-pad {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 180px;
+            height: 180px;
             pointer-events: auto;
         }
+        
+        .d-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            border-radius: 10px;
+        }
+        .d-btn:active { background: rgba(255, 255, 255, 0.5); }
+
+        /* Posicionamento Cruz */
+        .d-up { top: 0; left: 60px; }
+        .d-down { bottom: 0; left: 60px; }
+        .d-left { top: 60px; left: 0; }
+        .d-right { top: 60px; right: 0; }
+
+        /* Botão Ação (Pulo/Enter) */
+        .action-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid rgba(255, 100, 100, 0.5);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+        }
+        .action-btn:active { background: rgba(255, 0, 0, 0.5); }
+
+        /* --- FERRAMENTAS DE AJUSTE (ZOOM) --- */
+        #settings-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 200;
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 5px;
+            pointer-events: auto;
+            opacity: 0.5;
+        }
+        #settings-panel {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            z-index: 200;
+            width: 200px;
+        }
+        
+        .edit-overlay {
+            /* Camada invisível para arrastar o jogo */
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 255, 0, 0.1);
+            border: 4px dashed yellow;
+            z-index: 50;
+            display: none;
+            pointer-events: auto; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: yellow;
+            font-weight: bold;
+            text-shadow: 1px 1px black;
+        }
+
+        /* --- SELEÇÃO DE PERSONAGEM (MODAL) --- */
+        #lobby-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .char-card {
+            background: #333;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+        .selected { border-color: #0f0; background: #224422; }
+        .start-btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="role-selector">
-        <label><input type="radio" name="role" value="fireboy" checked> Fireboy</label>
-        <label><input type="radio" name="role" value="watergirl"> Watergirl</label>
+    <div id="lobby-overlay">
+        <h2>Escolha seu Personagem</h2>
+        <div style="display:flex; gap: 20px;">
+            <div class="char-card selected" onclick="selectRole('fireboy', this)">
+                <h3>🔥 Fireboy</h3>
+                <small>Setas</small>
+            </div>
+            <div class="char-card" onclick="selectRole('watergirl', this)">
+                <h3>💧 Watergirl</h3>
+                <small>WASD</small>
+            </div>
+        </div>
+        <button class="start-btn" onclick="startGame()">JOGAR</button>
     </div>
 
-    <div id="game-container"></div>
+    <div id="viewport">
+        <div id="edit-overlay" class="edit-overlay" style="display:none;">
+            ARRASTE PARA MOVER
+        </div>
 
-    <div id="controls">
-        <div class="btn-group">
-            <div class="btn" id="btn-left">⬅️</div>
-            <div class="btn" id="btn-right">➡️</div>
+        <div id="game-wrapper">
+            </div>
+    </div>
+
+    <button id="settings-btn" onclick="toggleEditMode()">⚙️ Ajustar Tela</button>
+    <div id="settings-panel">
+        <label>Zoom: <span id="zoom-val">1.0</span>x</label>
+        <input type="range" id="zoom-slider" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateZoom(this.value)">
+        <small>Arraste a tela verde para mover o jogo.</small>
+    </div>
+
+    <div id="ui-layer">
+        <div class="d-pad">
+            <div class="d-btn d-up" id="btn-up">⬆</div>
+            <div class="d-btn d-left" id="btn-left">⬅</div>
+            <div class="d-btn d-right" id="btn-right">➡</div>
+            <div class="d-btn d-down" id="btn-down">⬇</div>
         </div>
-        <div class="btn-group">
-            <div class="btn" id="btn-jump">⬆️</div>
-        </div>
+        <div class="action-btn" id="btn-jump">↟</div>
     </div>
 
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
-    
     <script>
-        // Configuração do Jogo
-        const gameConfig = {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            letterbox: "on",
-        };
+        let currentRole = 'fireboy';
+        let scale = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isEditMode = false;
 
-        // Carrega o Player Ruffle
+        // --- Configuração do Ruffle ---
         window.RufflePlayer = window.RufflePlayer || {};
         window.addEventListener("load", (event) => {
             const ruffle = window.RufflePlayer.newest();
             const player = ruffle.createPlayer();
-            const container = document.getElementById("game-container");
+            const wrapper = document.getElementById("game-wrapper");
             
-            container.appendChild(player);
-            player.load("jogo.swf"); // NOME DO SEU ARQUIVO AQUI
+            wrapper.appendChild(player);
             
-            // Ajustar foco para garantir que o teclado funcione
-            player.addEventListener('mouseenter', () => player.focus());
-            window.addEventListener('click', () => player.focus());
+            // Configurações para tentar forçar funcionamento
+            player.config = {
+                letterbox: "on",
+                autoplay: "on",
+                unmuteOverlay: "hidden"
+            };
+            
+            player.load("jogo.swf");
+
+            // Loop para garantir foco constante
+            setInterval(() => {
+                if(player.hasFocus === false) player.focus();
+            }, 1000);
         });
 
-        // Mapeamento de Teclas
-        const keys = {
-            fireboy: { left: 37, right: 39, up: 38 }, // Setas
-            watergirl: { left: 65, right: 68, up: 87 } // A, D, W
-        };
-
-        // Função para Simular Tecla Pressionada
-        function triggerKey(code, type) {
-            const event = new KeyboardEvent(type, {
-                bubbles: true, cancelable: true, keyCode: code, which: code
-            });
-            window.dispatchEvent(event);
-            document.dispatchEvent(event);
+        // --- Lógica de Seleção de Personagem ---
+        function selectRole(role, elem) {
+            currentRole = role;
+            document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+            elem.classList.add('selected');
         }
 
-        // Lógica dos Botões Touch
-        const setupButton = (id, action) => {
-            const btn = document.getElementById(id);
-            
-            const getCode = () => {
-                const role = document.querySelector('input[name="role"]:checked').value;
-                return keys[role][action];
-            };
+        function startGame() {
+            document.getElementById('lobby-overlay').style.display = 'none';
+            // Entrar em tela cheia se possível
+            try { document.documentElement.requestFullscreen(); } catch(e){}
+        }
 
-            // Touch Start (Pressionar)
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Evita zoom/scroll
-                triggerKey(getCode(), 'keydown');
-                btn.style.backgroundColor = "rgba(255, 255, 255, 0.6)";
-            });
-
-            // Touch End (Soltar)
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                triggerKey(getCode(), 'keyup');
-                btn.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
-            });
+        // --- Lógica de Input (Teclado Virtual) ---
+        // Fireboy: Setas | Watergirl: WASD
+        const keyMap = {
+            fireboy:   { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' },
+            watergirl: { up: 'KeyW',    down: 'KeyS',      left: 'KeyA',      right: 'KeyD' }
         };
 
-        setupButton('btn-left', 'left');
-        setupButton('btn-right', 'right');
-        setupButton('btn-jump', 'up');
+        const keyCodes = {
+            'ArrowUp': 38, 'ArrowDown': 40, 'ArrowLeft': 37, 'ArrowRight': 39,
+            'KeyW': 87, 'KeyS': 83, 'KeyA': 65, 'KeyD': 68
+        };
+
+        function simulateKey(action, type) {
+            const code = keyMap[currentRole][action];
+            const keyCode = keyCodes[code];
+            
+            const eventOptions = {
+                key: code,
+                code: code,
+                keyCode: keyCode,
+                which: keyCode,
+                bubbles: true,
+                cancelable: true,
+                view: window
+            };
+
+            const player = document.querySelector('ruffle-player');
+            
+            if(player) {
+                // Força o foco antes de enviar
+                player.focus();
+                
+                // Dispara evento nativo
+                player.dispatchEvent(new KeyboardEvent(type, eventOptions));
+            }
+        }
+
+        function setupBtn(id, action) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                simulateKey(action, 'keydown');
+                btn.style.background = "rgba(255,255,255,0.5)";
+            });
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                simulateKey(action, 'keyup');
+                btn.style.background = "";
+            });
+        }
+
+        setupBtn('btn-up', 'up');
+        setupBtn('btn-down', 'down');
+        setupBtn('btn-left', 'left');
+        setupBtn('btn-right', 'right');
+        setupBtn('btn-jump', 'up'); // Botão extra de pulo (mesma tecla de Up)
+
+        // --- Lógica de Zoom e Pan (Ajuste de Tela) ---
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const panel = document.getElementById('settings-panel');
+            const overlay = document.getElementById('edit-overlay');
+            const btn = document.getElementById('settings-btn');
+
+            if(isEditMode) {
+                panel.style.display = 'flex';
+                overlay.style.display = 'flex';
+                btn.innerText = "✅ Salvar Posição";
+                btn.style.opacity = "1";
+                document.getElementById('ui-layer').style.display = 'none'; // Esconde controles ao editar
+            } else {
+                panel.style.display = 'none';
+                overlay.style.display = 'none';
+                btn.innerText = "⚙️ Ajustar Tela";
+                btn.style.opacity = "0.5";
+                document.getElementById('ui-layer').style.display = 'block'; // Volta controles
+            }
+        }
+
+        function updateTransform() {
+            const wrapper = document.getElementById('game-wrapper');
+            wrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+        }
+
+        function updateZoom(val) {
+            scale = parseFloat(val);
+            document.getElementById('zoom-val').innerText = scale.toFixed(1);
+            updateTransform();
+        }
+
+        // Lógica de Arrastar (Pan)
+        const overlay = document.getElementById('edit-overlay');
+        let isDragging = false;
+        let startX, startY, initialPanX, initialPanY;
+
+        overlay.addEventListener('touchstart', (e) => {
+            if(!isEditMode) return;
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            initialPanX = panX;
+            initialPanY = panY;
+        });
+
+        overlay.addEventListener('touchmove', (e) => {
+            if(!isDragging || !isEditMode) return;
+            e.preventDefault();
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            panX = initialPanX + dx;
+            panY = initialPanY + dy;
+            updateTransform();
+        });
+
+        overlay.addEventListener('touchend', () => { isDragging = false; });
 
     </script>
 </body>
