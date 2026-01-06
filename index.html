@@ -3,38 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fireboy V9 - Debug Mode</title>
+    <title>Fireboy V10 - Android Fix</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
     <style>
         * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
-            margin: 0; background: #000; overflow: hidden;
-            font-family: monospace; width: 100vw; height: 100dvh;
-            color: white; display: flex; justify-content: center; align-items: center;
+            margin: 0; background: #050505; overflow: hidden;
+            font-family: 'Courier New', monospace; width: 100vw; height: 100dvh;
+            color: #0f0; display: flex; justify-content: center; align-items: center;
         }
 
-        /* PAINEL */
-        .glass-panel {
-            background: #111; border: 1px solid #333; border-radius: 10px;
-            padding: 20px; width: 95%; max-width: 400px; text-align: center;
-            display: flex; flex-direction: column; gap: 10px;
+        /* TERMINAL STYLE UI */
+        .panel {
+            background: #111; border: 2px solid #333; border-radius: 0;
+            padding: 20px; width: 95%; max-width: 420px; text-align: center;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
         }
 
-        /* CONSOLE DE ERROS */
-        #debug-log {
-            width: 100%; height: 80px; background: #000; border: 1px solid #555;
-            color: #0f0; font-size: 10px; text-align: left; padding: 5px;
-            overflow-y: scroll; margin-top: 10px; white-space: pre-wrap;
+        h2 { margin: 0; border-bottom: 1px dashed #333; padding-bottom: 10px; color: #fff; }
+        
+        .status-box {
+            background: #000; border: 1px solid #333; padding: 10px;
+            font-size: 12px; color: #aaa; min-height: 40px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .error-msg { color: #ff3333; }
-        .warn-msg { color: #ffff33; }
 
-        input { width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: white; text-align: center; }
-        button { width: 100%; padding: 15px; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; }
-        .btn-host { background: #007bff; color: white; }
-        .btn-join { background: #28a745; color: white; }
-        .btn-start { background: #ffc107; color: black; margin-top: 10px; }
+        input {
+            width: 100%; padding: 15px; background: #222; border: 1px solid #444;
+            color: #0f0; text-align: center; font-size: 18px; font-family: inherit;
+        }
+
+        button {
+            width: 100%; padding: 15px; font-weight: bold; cursor: pointer;
+            border: none; font-family: inherit; font-size: 16px;
+            transition: 0.2s;
+        }
+
+        .btn-host { background: #006600; color: white; }
+        .btn-host:active { background: #004400; }
+        
+        .btn-join { background: #004488; color: white; }
+        .btn-join:active { background: #003366; }
 
         .screen { display: none; width: 100%; height: 100%; position: absolute; top:0; left:0; justify-content: center; align-items: center; z-index: 50; }
         .active { display: flex; }
@@ -49,73 +60,74 @@
         #ui-layer { position: absolute; top:0; left:0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .d-pad { position: absolute; bottom: 20px; left: 20px; width: 180px; height: 180px; pointer-events: auto; }
         .d-btn {
-            position: absolute; width: 60px; height: 60px; border-radius: 10px;
-            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-            display: flex; justify-content: center; align-items: center; font-size: 24px;
+            position: absolute; width: 60px; height: 60px;
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: center; font-size: 24px; color: white;
         }
-        .d-btn:active { background: rgba(255,255,255,0.5); }
+        .d-btn:active { background: rgba(255,255,255,0.4); }
         .d-up { top:0; left:60px; } .d-down { bottom:0; left:60px; }
         .d-left { top:60px; left:0; } .d-right { top:60px; right:0; }
+        
         .action-btn {
-            position: absolute; bottom: 40px; right: 40px; width: 80px; height: 80px;
-            background: rgba(255,0,0,0.3); border: 2px solid rgba(255,100,100,0.5); border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-size: 30px; pointer-events: auto;
+            position: absolute; bottom: 40px; right: 40px; width: 90px; height: 90px;
+            background: rgba(200,0,0,0.3); border: 2px solid rgba(255,50,50,0.5); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 40px; pointer-events: auto; color: white;
         }
-        .action-btn:active { background: rgba(255,0,0,0.6); }
+        .action-btn:active { background: rgba(200,0,0,0.6); }
 
-        #settings-btn { position: absolute; top:5px; right:5px; padding:5px; z-index:200; pointer-events:auto; font-size:12px; opacity: 0.5; }
+        #mute-toggle {
+            position: absolute; top: 10px; right: 10px; z-index: 200;
+            background: #333; color: white; border: 1px solid #555;
+            padding: 5px 10px; font-size: 10px; pointer-events: auto;
+        }
     </style>
 </head>
 <body>
 
-    <div id="screen-menu" class="screen active">
-        <div class="glass-panel">
-            <h3>Fireboy V9 (Debug)</h3>
-            <div style="font-size: 12px; color: #aaa; text-align: left;">
-                Regras:<br>
-                1. Host DEVE ser Android/PC (Não iPhone).<br>
-                2. Use HTTPS (Cadeado no navegador).
-            </div>
+    <div id="screen-login" class="screen active">
+        <div class="panel">
+            <h2>Fireboy V10 Mobile</h2>
+            <div class="status-box">Correção: Android Capture Stream</div>
             <input type="text" id="input-nick" placeholder="Seu Nick">
-            <button class="btn-host" onclick="initHost()">HOST (CRIAR)</button>
-            <button class="btn-join" onclick="showJoin()">CLIENT (ENTRAR)</button>
-            
-            <div id="debug-log">Log do Sistema Iniciado...</div>
+            <button class="btn-host" onclick="saveNick()">INICIAR</button>
+        </div>
+    </div>
+
+    <div id="screen-menu" class="screen">
+        <div class="panel">
+            <h2 id="greet-msg">MENU</h2>
+            <button class="btn-host" onclick="initHost()">HOST (ANDROID/PC)</button>
+            <button class="btn-join" onclick="showJoin()">CLIENT (IPHONE/PC)</button>
+            <div style="font-size:10px; color:#666;">Use Chrome no Android.</div>
         </div>
     </div>
 
     <div id="screen-host" class="screen">
-        <div class="glass-panel">
-            <h3>Sala Criada</h3>
-            <input type="text" id="host-code" readonly value="Carregando..." style="color:cyan; font-weight:bold;">
-            <p id="host-status">Esperando PeerJS...</p>
-            
-            <div id="step-2" style="display:none; border-top:1px solid #333; padding-top:10px;">
-                <p style="color:#0f0">Amigo Conectado!</p>
-                <button class="btn-start" onclick="requestScreenShare()">COMPARTILHAR TELA</button>
-            </div>
-            
-            <button onclick="location.reload()" style="background:#333; margin-top:10px;">Cancelar</button>
+        <div class="panel">
+            <h3>SALA CRIADA</h3>
+            <input type="text" id="host-code" readonly value="..." style="color:#0f0; font-weight:bold;">
+            <div id="host-log" class="status-box">Aguardando conexão PeerJS...</div>
+            <button id="btn-start-stream" class="btn-host" style="display:none;" onclick="startAndroidStream()">INICIAR JOGO</button>
+            <button onclick="location.reload()" style="background:#333; color:#aaa;">CANCELAR</button>
         </div>
     </div>
 
     <div id="screen-join" class="screen">
-        <div class="glass-panel">
-            <h3>Entrar</h3>
-            <input type="text" id="join-input" placeholder="Código da Sala">
-            <button class="btn-join" onclick="joinRoom()">CONECTAR</button>
-            <p id="join-status"></p>
-            <button onclick="location.reload()" style="background:#333; margin-top:10px;">Voltar</button>
+        <div class="panel">
+            <h3>CONECTAR</h3>
+            <input type="text" id="join-code" placeholder="CÓDIGO" style="text-transform:uppercase;">
+            <button class="btn-join" onclick="joinRoom()">ENTRAR</button>
+            <div id="join-log" class="status-box">Pronto.</div>
+            <button onclick="location.reload()" style="background:#333; color:#aaa;">VOLTAR</button>
         </div>
     </div>
 
     <div id="game-view">
+        <button id="mute-toggle" onclick="toggleMute()">SOM: ON</button>
         <div id="game-wrapper">
             <ruffle-player id="ruffle-inst"></ruffle-player>
             <video id="remote-vid" autoplay playsinline></video>
         </div>
-        <button id="settings-btn" onclick="toggleLog()">Log</button>
-
         <div id="ui-layer">
             <div class="d-pad">
                 <div class="d-btn d-up" id="btn-up">⬆</div>
@@ -128,207 +140,153 @@
     </div>
 
     <script>
-        // --- SISTEMA DE LOG ---
-        function log(msg, type='') {
-            const div = document.getElementById('debug-log');
-            const line = document.createElement('div');
-            line.innerText = `> ${msg}`;
-            if(type === 'error') line.className = 'error-msg';
-            if(type === 'warn') line.className = 'warn-msg';
-            div.appendChild(line);
-            div.scrollTop = div.scrollHeight;
-            console.log(msg);
+        // CONFIG
+        let myNick = localStorage.getItem('fb_nick') || "";
+        if(myNick) document.getElementById('input-nick').value = myNick;
+        
+        let peer, conn, isHost = false;
+
+        function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function saveNick() {
+            myNick = document.getElementById('input-nick').value || "Player";
+            localStorage.setItem('fb_nick', myNick);
+            document.getElementById('greet-msg').innerText = "OLÁ " + myNick.toUpperCase();
+            show('screen-menu');
         }
-
-        // --- VERIFICAÇÃO INICIAL ---
-        window.onload = () => {
-            if(location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                log("ERRO CRÍTICO: SITE NÃO É HTTPS!", 'error');
-                log("O compartilhamento de tela NÃO vai funcionar.", 'error');
-                alert("ERRO: Você precisa usar HTTPS ou o compartilhamento será bloqueado pelo navegador.");
-            } else {
-                log("Conexão Segura (HTTPS) detectada.");
-            }
-            
-            // Verifica suporte a Screen Share
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                log("AVISO: Seu navegador parece não suportar compartilhamento de tela (iPhone?).", 'warn');
-            }
-        };
-
-        let peer, conn, isHost = false, myRole = 'fireboy';
-
-        function show(id) { 
-            document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
-            document.getElementById(id).classList.add('active'); 
-        }
+        function showJoin() { show('screen-join'); }
 
         // --- HOST LOGIC ---
         function initHost() {
-            log("Iniciando Host...");
             isHost = true;
             show('screen-host');
+            document.getElementById('host-log').innerText = "Carregando Ruffle...";
 
-            // Carrega Ruffle
-            try {
-                window.RufflePlayer = window.RufflePlayer || {};
-                const ruffle = window.RufflePlayer.newest();
-                const player = document.getElementById('ruffle-inst');
-                player.config = { letterbox: "on", autoplay: "on", unmuteOverlay: "hidden", backgroundColor: "#000000" };
-                player.load("jogo.swf");
-                log("Ruffle carregado.");
-            } catch(e) {
-                log("Erro ao carregar Ruffle: " + e.message, 'error');
-            }
+            // 1. Carregar Ruffle IMEDIATAMENTE (invisível)
+            const rp = document.getElementById('ruffle-inst');
+            rp.style.display = 'block'; 
+            // Truque: Deixar opacidade 0 até começar, mas precisa estar "display block" pro canvas criar
+            rp.style.opacity = '0'; 
+            
+            window.RufflePlayer = window.RufflePlayer || {};
+            const ruffle = window.RufflePlayer.newest();
+            const player = rp;
+            player.config = { letterbox: "on", autoplay: "on", unmuteOverlay: "hidden", backgroundColor: "#000000" };
+            player.load("jogo.swf");
 
-            // Cria Peer
-            try {
-                const id = Math.random().toString(36).substring(2,6).toUpperCase();
-                peer = new Peer(id, { debug: 2 });
-                
-                peer.on('open', (peerId) => {
-                    document.getElementById('host-code').value = peerId;
-                    document.getElementById('host-status').innerText = "Aguardando jogador...";
-                    log("Servidor PeerJS conectado. ID: " + peerId);
-                });
+            // 2. PeerJS
+            const id = Math.random().toString(36).substring(2,6).toUpperCase();
+            peer = new Peer(id);
+            
+            peer.on('open', pid => {
+                document.getElementById('host-code').value = pid;
+                document.getElementById('host-log').innerText = "Aguardando Jogador 2...";
+            });
 
-                peer.on('error', (err) => {
-                    log("Erro PeerJS: " + err.type, 'error');
-                    alert("Erro de conexão. Tente recarregar a página.");
-                });
-
-                peer.on('connection', (c) => {
-                    conn = c;
-                    log("Jogador conectado!");
-                    document.getElementById('host-status').style.display = 'none';
-                    document.getElementById('step-2').style.display = 'block';
-                    setupData();
-                });
-            } catch(e) {
-                log("Falha ao criar Peer: " + e.message, 'error');
-            }
+            peer.on('connection', c => {
+                conn = c;
+                document.getElementById('host-log').innerText = "JOGADOR CONECTADO!";
+                document.getElementById('btn-start-stream').style.display = 'block';
+                setupData();
+            });
         }
 
-        async function requestScreenShare() {
-            log("Solicitando permissão de tela...");
+        async function startAndroidStream() {
+            const status = document.getElementById('host-log');
+            status.innerText = "Capturando Jogo...";
+
             try {
-                // Tenta capturar
-                const stream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { frameRate: 30, cursor: "always" },
-                    audio: { 
-                        echoCancellation: false, 
-                        noiseSuppression: false, 
-                        autoGainControl: false 
-                    }
-                });
+                // 1. Busca o Canvas dentro do Shadow DOM do Ruffle
+                const player = document.getElementById('ruffle-inst');
+                let canvas = null;
                 
-                log("Permissão concedida!");
-                
-                // Verifica se tem áudio
-                if(stream.getAudioTracks().length === 0) {
-                    log("AVISO: Usuário não compartilhou áudio.", 'warn');
-                    alert("Atenção: Você não marcou 'Compartilhar Áudio'. O jogo ficará mudo.");
+                // Tenta achar o canvas por 5 segundos
+                for(let i=0; i<50; i++) {
+                    canvas = player.shadowRoot ? player.shadowRoot.querySelector('canvas') : player.querySelector('canvas');
+                    if(canvas) break;
+                    await new Promise(r => setTimeout(r, 100));
                 }
 
-                // Liga para o cliente
-                const call = peer.call(conn.peer, stream);
-                log("Transmitindo stream...");
+                if(!canvas) throw new Error("Canvas do jogo não encontrado!");
 
-                // UI
-                document.getElementById('ruffle-inst').style.display = 'block';
-                enterGame();
+                // 2. Captura o stream do Canvas (NÃO DA TELA)
+                const videoStream = canvas.captureStream(30); // 30 FPS
+                
+                // 3. Tenta áudio do microfone (Android não deixa pegar áudio de sistema sem tela cheia)
+                let audioStream = null;
+                try {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { echoCancellation: true, noiseSuppression: true } 
+                    });
+                } catch(e) {
+                    console.log("Mic recusado, stream mudo.");
+                }
+
+                // 4. Junta tudo
+                const tracks = [...videoStream.getVideoTracks()];
+                if(audioStream) tracks.push(...audioStream.getAudioTracks());
+                const finalStream = new MediaStream(tracks);
+
+                // 5. Liga
+                status.innerText = "Conectando Video...";
+                const call = peer.call(conn.peer, finalStream);
+
+                // 6. Vai pro jogo
+                document.getElementById('ruffle-inst').style.opacity = '1'; // Mostra o jogo
+                enterGameMode();
                 conn.send({ type: 'start' });
 
-                // Monitora fim
-                stream.getVideoTracks()[0].onended = () => {
-                    log("Compartilhamento encerrado pelo usuário.");
-                    location.reload();
-                };
-
-            } catch(err) {
-                log("ERRO AO CAPTURAR: " + err.name + " - " + err.message, 'error');
-                if(err.name === 'NotAllowedError') {
-                    alert("Você negou a permissão ou cancelou. Tente de novo.");
-                } else if (err.name === 'NotFoundError') {
-                    alert("Seu dispositivo não suporta isso. Tente num PC ou Android atualizado.");
-                } else {
-                    alert("Erro: " + err.message);
-                }
+            } catch(e) {
+                alert("Erro Android: " + e.message);
+                status.innerText = "Erro: " + e.message;
             }
         }
 
         // --- CLIENT LOGIC ---
-        function showJoin() { show('screen-join'); }
-
         function joinRoom() {
             isHost = false;
-            const code = document.getElementById('join-input').value.toUpperCase();
-            if(!code) return log("Digite um código!", 'warn');
+            const code = document.getElementById('join-code').value.toUpperCase();
+            if(!code) return;
             
-            log("Tentando conectar a: " + code);
-            document.getElementById('join-status').innerText = "Conectando...";
-
-            try {
-                peer = new Peer();
-                peer.on('open', () => {
-                    conn = peer.connect(code);
-                    
-                    conn.on('open', () => {
-                        log("Conectado ao Host! Aguardando vídeo...");
-                        document.getElementById('join-status').innerText = "Conectado! Aguarde o Host...";
-                        setupData();
-                    });
-
-                    conn.on('error', (err) => log("Erro na conexão: " + err, 'error'));
+            document.getElementById('join-log').innerText = "Conectando...";
+            
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(code);
+                conn.on('open', () => {
+                    document.getElementById('join-log').innerText = "Aguardando Host iniciar...";
+                    setupData();
                 });
+            });
 
-                peer.on('error', (err) => {
-                    log("Erro PeerJS Cliente: " + err.type, 'error');
-                    document.getElementById('join-status').innerText = "Erro: Código inválido ou erro de rede.";
-                });
-
-                peer.on('call', (call) => {
-                    log("Recebendo chamada de vídeo...");
-                    call.answer();
-                    call.on('stream', (remoteStream) => {
-                        log("Stream recebido!");
-                        const vid = document.getElementById('remote-vid');
-                        vid.style.display = 'block';
-                        vid.srcObject = remoteStream;
-                        enterGame();
-                        // Hack para iOS Audio
-                        vid.play().catch(e => log("Autoplay bloqueado (toque na tela)", 'warn'));
+            peer.on('call', call => {
+                call.answer();
+                call.on('stream', stream => {
+                    const vid = document.getElementById('remote-vid');
+                    vid.style.display = 'block';
+                    vid.srcObject = stream;
+                    enterGameMode();
+                    vid.play().catch(e => {
+                        // Força play se navegador bloquear
+                        document.body.addEventListener('click', () => vid.play(), {once:true});
                     });
                 });
-
-            } catch(e) {
-                log("Erro fatal cliente: " + e.message, 'error');
-            }
+            });
         }
 
+        // --- COMMON ---
         function setupData() {
             conn.on('data', d => {
                 if(isHost && d.type === 'input') execKey(d.role, d.action, d.kType);
             });
         }
 
-        function enterGame() {
+        function enterGameMode() {
             document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
             document.getElementById('game-view').style.display = 'flex';
             try{ document.documentElement.requestFullscreen(); }catch(e){}
         }
 
-        function toggleLog() {
-            const logDiv = document.getElementById('debug-log');
-            const menu = document.querySelector('.glass-panel');
-            if(document.getElementById('screen-menu').classList.contains('active')) {
-                // Se estiver no menu, não faz nada
-            } else {
-                alert("Veja o log no menu inicial se houver erro.");
-            }
-        }
-
-        // --- INPUTS ---
+        // INPUTS
         const keys = { 'ArrowUp':38, 'ArrowDown':40, 'ArrowLeft':37, 'ArrowRight':39, 'KeyW':87, 'KeyS':83, 'KeyA':65, 'KeyD':68 };
         const map = { fireboy: {up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'}, watergirl: {up:'KeyW', down:'KeyS', left:'KeyA', right:'KeyD'} };
 
@@ -345,7 +303,7 @@
                 const targetRole = isHost ? 'fireboy' : 'watergirl';
                 if(isHost) execKey(targetRole, act, t);
                 else if(conn && conn.open) conn.send({type:'input', role:targetRole, action:act, kType:t});
-                el.style.background = (t==='keydown')?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.2)";
+                el.style.background = (t==='keydown')?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)";
             };
             el.addEventListener('touchstart', e=>fn(e,'keydown'));
             el.addEventListener('touchend', e=>fn(e,'keyup'));
@@ -353,6 +311,11 @@
         ['up','down','left','right'].forEach(d => btnHandler('btn-'+d, d));
         btnHandler('btn-jump', 'up');
 
+        function toggleMute() {
+            const vid = document.getElementById('remote-vid');
+            vid.muted = !vid.muted;
+            document.getElementById('mute-toggle').innerText = vid.muted ? "SOM: OFF" : "SOM: ON";
+        }
     </script>
 </body>
 </html>
